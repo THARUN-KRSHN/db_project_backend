@@ -34,6 +34,8 @@ def create_shop(
             shop_name=payload.shop_name,
             category=payload.category,
             logo=payload.logo,
+            show_price=payload.show_price,
+            show_stock=payload.show_stock,
         )
         db.add(shop)
         db.flush()
@@ -126,6 +128,10 @@ def update_shop(
         shop.category = payload.category
     if payload.logo is not None:
         shop.logo = payload.logo
+    if payload.show_price is not None:
+        shop.show_price = payload.show_price
+    if payload.show_stock is not None:
+        shop.show_stock = payload.show_stock
 
     db.commit()
     db.refresh(shop)

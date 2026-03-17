@@ -84,6 +84,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
                 "full_name": db_user.full_name,
                 "role": db_user.role,
                 "shop_id": str(db_user.shop_id) if db_user.shop_id else None,
+                "shop_name": db_user.shop.shop_name if db_user.shop else None,
             },
         }
 

@@ -23,6 +23,7 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     role: str
     shop_id: Optional[UUID] = None
+    shop_name: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -41,12 +42,16 @@ class ShopCreate(BaseModel):
     shop_name: str
     category: Optional[str] = None
     logo: Optional[str] = None
+    show_price: bool = True
+    show_stock: bool = True
 
 
 class ShopUpdate(BaseModel):
     shop_name: Optional[str] = None
     category: Optional[str] = None
     logo: Optional[str] = None
+    show_price: Optional[bool] = None
+    show_stock: Optional[bool] = None
 
 
 class ShopResponse(BaseModel):
@@ -54,6 +59,8 @@ class ShopResponse(BaseModel):
     shop_name: str
     category: Optional[str] = None
     logo: Optional[str] = None
+    show_price: bool
+    show_stock: bool
     created_at: datetime
 
     class Config:
@@ -83,8 +90,8 @@ class ProductResponse(BaseModel):
     shop_id: UUID
     product_name: str
     description: Optional[str] = None
-    price: float
-    quantity: int
+    price: Optional[float] = None
+    quantity: Optional[int] = None
     threshold: int
     created_at: datetime
 

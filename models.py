@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, String, Integer, Float, DateTime, ForeignKey, Text, Index
+    Column, String, Integer, Float, DateTime, ForeignKey, Text, Index, Boolean
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -16,6 +16,8 @@ class Shop(Base):
     shop_name = Column(String(255), nullable=False, unique=True)
     category = Column(String(100))
     logo = Column(Text)
+    show_price = Column(Boolean, default=True)
+    show_stock = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -38,6 +40,10 @@ class User(Base):
     # Relationships
     shop = relationship("Shop", back_populates="users")
     sales = relationship("Sale", back_populates="staff")
+
+    @property
+    def shop_name(self):
+        return self.shop.shop_name if self.shop else None
 
 
 class Product(Base):
