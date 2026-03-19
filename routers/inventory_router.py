@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Product, User
 from schemas import ProductCreate, ProductUpdate, ProductResponse
-from auth import require_admin, get_current_user
+from auth import require_admin, get_current_user, require_staff_or_admin
 
 router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
 
@@ -11,20 +11,21 @@ router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def add_product(
     payload: ProductCreate,
-    admin: User = Depends(require_admin),
+    user: User = Depends(require_staff_or_admin),
     db: Session = Depends(get_db),
 ):
-    """Add a new product to the shop's inventory. Admin only."""
-    if not admin.shop_id:
+    """Add a new product to the shop's inventory. Admin or Staff."""
+    if not user.shop_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Create a shop first",
         )
 
     product = Product(
-        shop_id=admin.shop_id,
+        shop_id=user.shop_id,
         product_name=payload.product_name,
         description=payload.description,
+        image=payload.image,
         price=payload.price,
         quantity=payload.quantity,
         threshold=payload.threshold,
@@ -100,15 +101,15 @@ def get_product(
 def update_product(
     product_id: str,
     payload: ProductUpdate,
-    admin: User = Depends(require_admin),
+    user: User = Depends(require_staff_or_admin),
     db: Session = Depends(get_db),
 ):
-    """Update a product. Admin only."""
+    """Update a product. Admin or Staff."""
     product = (
         db.query(Product)
         .filter(
             Product.product_id == product_id,
-            Product.shop_id == admin.shop_id,
+            Product.shop_id == user.shop_id,
         )
         .first()
     )
@@ -122,6 +123,8 @@ def update_product(
         product.product_name = payload.product_name
     if payload.description is not None:
         product.description = payload.description
+    if payload.image is not None:
+        product.image = payload.image
     if payload.price is not None:
         product.price = payload.price
     if payload.quantity is not None:

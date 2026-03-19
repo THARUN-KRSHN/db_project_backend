@@ -72,6 +72,7 @@ class ShopResponse(BaseModel):
 class ProductCreate(BaseModel):
     product_name: str
     description: Optional[str] = None
+    image: Optional[str] = None
     price: float
     quantity: int = 0
     threshold: int = 10
@@ -80,6 +81,7 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     product_name: Optional[str] = None
     description: Optional[str] = None
+    image: Optional[str] = None
     price: Optional[float] = None
     quantity: Optional[int] = None
     threshold: Optional[int] = None
@@ -90,6 +92,7 @@ class ProductResponse(BaseModel):
     shop_id: UUID
     product_name: str
     description: Optional[str] = None
+    image: Optional[str] = None
     price: Optional[float] = None
     quantity: Optional[int] = None
     threshold: int

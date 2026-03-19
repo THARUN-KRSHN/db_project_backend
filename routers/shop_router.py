@@ -1,11 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Shop, User
 from schemas import ShopCreate, ShopUpdate, ShopResponse
-from auth import require_admin, get_current_user
+from auth import require_admin, get_current_user, require_staff_or_admin
+import os
+import shutil
+import uuid
 
 router = APIRouter(prefix="/shops", tags=["Shop Management"])
+
+
+@router.post("/logo", response_model=dict)
+def upload_shop_logo(
+    file: UploadFile = File(...),
+    admin: User = Depends(require_admin),
+):
+    """Upload a shop logo. Admin only."""
+    # Ensure directory exists
+    os.makedirs("static/logos", exist_ok=True)
+    
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    file_path = f"static/logos/{filename}"
+    
+    # Save file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not save file: {str(e)}"
+        )
+            
+    return {"url": f"/static/logos/{filename}"}
 
 
 @router.post("/", response_model=ShopResponse, status_code=status.HTTP_201_CREATED)

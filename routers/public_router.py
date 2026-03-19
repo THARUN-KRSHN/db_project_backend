@@ -33,6 +33,7 @@ def get_public_inventory(
     Returns product listing for a shop by name.
     Customers can view product availability and search products.
     """
+    shop_name = shop_name.strip()
     shop = db.query(Shop).filter(Shop.shop_name == shop_name).first()
     if not shop:
         raise HTTPException(
@@ -55,6 +56,7 @@ def get_public_inventory(
             "shop_id": p.shop_id,
             "product_name": p.product_name,
             "description": p.description,
+            "image": p.image,
             "price": p.price if shop.show_price else None,
             "quantity": p.quantity if shop.show_stock else None,
             "created_at": p.created_at,
@@ -72,6 +74,7 @@ def get_public_shop_info(
     """
     Public endpoint — get basic shop information.
     """
+    shop_name = shop_name.strip()
     shop = db.query(Shop).filter(Shop.shop_name == shop_name).first()
     if not shop:
         raise HTTPException(

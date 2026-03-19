@@ -84,16 +84,23 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
                 "full_name": db_user.full_name,
                 "role": db_user.role,
                 "shop_id": str(db_user.shop_id) if db_user.shop_id else None,
-                "shop_name": db_user.shop.shop_name if db_user.shop else None,
+                "shop_name": db_user.shop_name,
             },
         }
 
     except HTTPException:
         raise
     except Exception as e:
+        # Check if it's a Supabase error (usually has a message)
+        error_msg = str(e)
+        if "invalid login credentials" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+            )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Login error: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal login error: {error_msg}",
         )
 
 

@@ -54,6 +54,7 @@ class Product(Base):
     shop_id = Column(UUID(as_uuid=True), ForeignKey("shops.shop_id", ondelete="CASCADE"), nullable=False)
     product_name = Column(String(255), nullable=False)
     description = Column(Text)
+    image = Column(Text)  # URL or relative path to uploaded image
     price = Column(Float, nullable=False)
     quantity = Column(Integer, nullable=False, default=0)
     threshold = Column(Integer, default=10)

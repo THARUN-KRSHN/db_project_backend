@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -33,6 +34,10 @@ app.include_router(inventory_router.router)
 app.include_router(billing_router.router)
 app.include_router(dashboard_router.router)
 app.include_router(public_router.router)
+
+# Mount static directory for uploads
+os.makedirs("static/logos", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/", tags=["Health"])
