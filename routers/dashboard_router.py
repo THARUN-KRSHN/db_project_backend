@@ -59,28 +59,72 @@ def get_dashboard_summary(
 
 @router.get("/daily-sales", response_model=list[DailySales])
 def get_daily_sales(
+    timeframe: str = "date",
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Get daily sales for the last 30 days.
-    Uses SQL GROUP BY on sale_date for aggregation.
+    Get aggregated sales data based on timeframe: time, date, week, month, year.
+    Uses SQL GROUP BY on sale_date with PostgreSQL date/time functions.
     """
     if not admin.shop_id:
         raise HTTPException(status_code=400, detail="No shop found")
 
-    # Raw SQL for clear GROUP BY demonstration
-    query = text("""
-        SELECT
-            DATE(sale_date) AS date,
-            COALESCE(SUM(total_amount), 0) AS total,
-            COUNT(*) AS count
-        FROM sales
-        WHERE shop_id = :shop_id
-            AND sale_date >= CURRENT_DATE - INTERVAL '30 days'
-        GROUP BY DATE(sale_date)
-        ORDER BY date DESC
-    """)
+    if timeframe == "time":
+        query = text("""
+            SELECT
+                CAST(DATE_TRUNC('hour', sale_date) AS VARCHAR) AS date,
+                COALESCE(SUM(total_amount), 0) AS total,
+                COUNT(*) AS count
+            FROM sales
+            WHERE shop_id = :shop_id AND sale_date >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+            GROUP BY DATE_TRUNC('hour', sale_date)
+            ORDER BY DATE_TRUNC('hour', sale_date) DESC
+        """)
+    elif timeframe == "week":
+        query = text("""
+            SELECT
+                CAST(DATE_TRUNC('week', sale_date) AS VARCHAR) AS date,
+                COALESCE(SUM(total_amount), 0) AS total,
+                COUNT(*) AS count
+            FROM sales
+            WHERE shop_id = :shop_id AND sale_date >= CURRENT_DATE - INTERVAL '12 weeks'
+            GROUP BY DATE_TRUNC('week', sale_date)
+            ORDER BY DATE_TRUNC('week', sale_date) DESC
+        """)
+    elif timeframe == "month":
+        query = text("""
+            SELECT
+                CAST(DATE_TRUNC('month', sale_date) AS VARCHAR) AS date,
+                COALESCE(SUM(total_amount), 0) AS total,
+                COUNT(*) AS count
+            FROM sales
+            WHERE shop_id = :shop_id AND sale_date >= CURRENT_DATE - INTERVAL '12 months'
+            GROUP BY DATE_TRUNC('month', sale_date)
+            ORDER BY DATE_TRUNC('month', sale_date) DESC
+        """)
+    elif timeframe == "year":
+        query = text("""
+            SELECT
+                CAST(DATE_TRUNC('year', sale_date) AS VARCHAR) AS date,
+                COALESCE(SUM(total_amount), 0) AS total,
+                COUNT(*) AS count
+            FROM sales
+            WHERE shop_id = :shop_id
+            GROUP BY DATE_TRUNC('year', sale_date)
+            ORDER BY DATE_TRUNC('year', sale_date) DESC
+        """)
+    else:  # default is date
+        query = text("""
+            SELECT
+                CAST(DATE(sale_date) AS VARCHAR) AS date,
+                COALESCE(SUM(total_amount), 0) AS total,
+                COUNT(*) AS count
+            FROM sales
+            WHERE shop_id = :shop_id AND sale_date >= CURRENT_DATE - INTERVAL '30 days'
+            GROUP BY DATE(sale_date)
+            ORDER BY DATE(sale_date) DESC
+        """)
 
     result = db.execute(query, {"shop_id": str(admin.shop_id)}).fetchall()
 
