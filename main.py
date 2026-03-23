@@ -15,15 +15,20 @@ app = FastAPI(
 )
 
 # CORS — allow frontend to connect
+# Collect all allowed origins, filtering out empty strings
+_allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    os.getenv("FRONTEND_URL", ""),
+]
+_allowed_origins = [o for o in _allowed_origins if o]  # remove empty strings
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        os.getenv("FRONTEND_URL", ""),
-    ],
+    allow_origins=_allowed_origins,
+    allow_origin_regex=r"https://smart-inventory-dbproject.vercel.app/",  # allow all Vercel preview + production URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
