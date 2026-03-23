@@ -28,7 +28,7 @@ _allowed_origins = [o for o in _allowed_origins if o]  # remove empty strings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    allow_origin_regex=r"https://smart-inventory-dbproject.vercel.app/",  # allow all Vercel preview + production URLs
+    allow_origin_regex=r"https://smart-inventory-dbproject\.vercel\.app",  # Vercel production URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
