@@ -42,6 +42,7 @@ class ShopCreate(BaseModel):
     shop_name: str
     category: Optional[str] = None
     logo: Optional[str] = None
+    cover_image: Optional[str] = None
     show_price: bool = True
     show_stock: bool = True
 
@@ -50,6 +51,7 @@ class ShopUpdate(BaseModel):
     shop_name: Optional[str] = None
     category: Optional[str] = None
     logo: Optional[str] = None
+    cover_image: Optional[str] = None
     show_price: Optional[bool] = None
     show_stock: Optional[bool] = None
 
@@ -59,6 +61,7 @@ class ShopResponse(BaseModel):
     shop_name: str
     category: Optional[str] = None
     logo: Optional[str] = None
+    cover_image: Optional[str] = None
     show_price: bool
     show_stock: bool
     created_at: datetime

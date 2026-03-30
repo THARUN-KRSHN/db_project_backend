@@ -38,6 +38,29 @@ def upload_shop_logo(
     return {"url": f"/static/logos/{filename}"}
 
 
+@router.post("/upload/image", response_model=dict)
+def upload_image_general(
+    file: UploadFile = File(...),
+    user: User = Depends(require_staff_or_admin),
+):
+    """Upload any image (logo, cover, product). Returns the URL."""
+    os.makedirs("static/uploads", exist_ok=True)
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    file_path = f"static/uploads/{filename}"
+    
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not save file: {str(e)}"
+        )
+            
+    return {"url": f"/{file_path}"}
+
+
 @router.post("/", response_model=ShopResponse, status_code=status.HTTP_201_CREATED)
 def create_shop(
     payload: ShopCreate,
@@ -64,6 +87,7 @@ def create_shop(
             shop_name=payload.shop_name,
             category=payload.category,
             logo=payload.logo,
+            cover_image=payload.cover_image,
             show_price=payload.show_price,
             show_stock=payload.show_stock,
         )
@@ -158,6 +182,8 @@ def update_shop(
         shop.category = payload.category
     if payload.logo is not None:
         shop.logo = payload.logo
+    if payload.cover_image is not None:
+        shop.cover_image = payload.cover_image
     if payload.show_price is not None:
         shop.show_price = payload.show_price
     if payload.show_stock is not None:

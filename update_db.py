@@ -21,8 +21,12 @@ def run_migrations():
         with engine.connect() as conn:
             print("Checking for 'image' column in 'products' table...")
             conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT"))
-            conn.commit()
             print("Successfully ensured 'image' column exists.")
+            
+            print("Checking for 'cover_image' column in 'shops' table...")
+            conn.execute(text("ALTER TABLE shops ADD COLUMN IF NOT EXISTS cover_image TEXT"))
+            conn.commit()
+            print("Successfully ensured 'cover_image' column exists.")
     except Exception as e:
         print(f"DB migration warning (non-fatal): {e}")
 

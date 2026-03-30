@@ -16,6 +16,7 @@ class Shop(Base):
     shop_name = Column(String(255), nullable=False, unique=True)
     category = Column(String(100))
     logo = Column(Text)
+    cover_image = Column(Text)
     show_price = Column(Boolean, default=True)
     show_stock = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
