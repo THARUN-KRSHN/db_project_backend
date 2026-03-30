@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from typing import List
 from database import get_db
 from models import Product, User
 from schemas import ProductCreate, ProductUpdate, ProductResponse
@@ -34,6 +35,39 @@ def add_product(
     db.commit()
     db.refresh(product)
     return product
+
+
+@router.post("/bulk", response_model=list[ProductResponse], status_code=status.HTTP_201_CREATED)
+def add_products_bulk(
+    payloads: List[ProductCreate],
+    user: User = Depends(require_staff_or_admin),
+    db: Session = Depends(get_db),
+):
+    """Add multiple products to the shop's inventory. Admin or Staff."""
+    if not user.shop_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Create a shop first",
+        )
+
+    products = []
+    for payload in payloads:
+        product = Product(
+            shop_id=user.shop_id,
+            product_name=payload.product_name,
+            description=payload.description,
+            image=payload.image,
+            price=payload.price,
+            quantity=payload.quantity,
+            threshold=payload.threshold,
+        )
+        db.add(product)
+        products.append(product)
+        
+    db.commit()
+    for p in products:
+        db.refresh(p)
+    return products
 
 
 @router.get("/", response_model=list[ProductResponse])
@@ -157,5 +191,10 @@ def delete_product(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found",
         )
+    
+    # Manually delete SaleItems to bypass foreign key constraint failures (acting as cascade)
+    from models import SaleItem
+    db.query(SaleItem).filter(SaleItem.product_id == product.product_id).delete(synchronize_session=False)
+
     db.delete(product)
     db.commit()

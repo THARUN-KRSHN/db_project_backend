@@ -1,5 +1,7 @@
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 from database import get_db
 from models import User, Shop
 from schemas import UserRegister, UserLogin, UserResponse, StaffCreate
@@ -161,6 +163,52 @@ def add_staff(
         )
 
 
+@router.post("/staff/bulk", response_model=list[UserResponse], status_code=status.HTTP_201_CREATED)
+def add_staff_bulk(
+    payloads: List[StaffCreate],
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin creates multiple staff accounts for their shop."""
+    if not admin.shop_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must create a shop before adding staff",
+        )
+
+    created_users = []
+    for payload in payloads:
+        try:
+            # Create staff user in Supabase Auth using admin client
+            auth_response = supabase_admin.auth.admin.create_user({
+                "email": payload.email,
+                "password": payload.password,
+                "email_confirm": True,
+            })
+
+            if auth_response.user is None:
+                continue
+
+            # Create staff record in our database
+            db_user = User(
+                user_id=auth_response.user.id,
+                email=payload.email,
+                full_name=payload.full_name,
+                role="staff",
+                shop_id=admin.shop_id,
+            )
+            db.add(db_user)
+            created_users.append(db_user)
+        except Exception as e:
+            # Log or print exception if necessary, but continue bulk operation
+            continue
+            
+    db.commit()
+    for u in created_users:
+         db.refresh(u)
+    return created_users
+
+
 @router.get("/staff", response_model=list[UserResponse])
 def list_staff(
     admin: User = Depends(require_admin),
@@ -174,3 +222,60 @@ def list_staff(
         User.role == "staff",
     ).all()
     return staff
+
+
+@router.delete("/staff/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_staff(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin deletes a staff account."""
+    if not admin.shop_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a shop admin")
+    
+    staff = db.query(User).filter(
+        User.user_id == user_id, 
+        User.shop_id == admin.shop_id, 
+        User.role == "staff"
+    ).first()
+    
+    if not staff:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Staff not found")
+
+    try:
+        supabase_admin.auth.admin.delete_user(user_id)
+    except Exception:
+        # If user not found in Supabase Auth, proceed to delete locally
+        pass
+
+    db.delete(staff)
+    db.commit()
+
+class BulkDeleteRequest(BaseModel):
+    user_ids: List[str]
+
+@router.post("/staff/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_staff_bulk(
+    payload: BulkDeleteRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin bulk deletes multiple staff accounts."""
+    if not admin.shop_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a shop admin")
+    
+    staff_members = db.query(User).filter(
+        User.user_id.in_(payload.user_ids), 
+        User.shop_id == admin.shop_id, 
+        User.role == "staff"
+    ).all()
+    
+    for staff in staff_members:
+        try:
+            supabase_admin.auth.admin.delete_user(str(staff.user_id))
+        except Exception:
+            pass
+        db.delete(staff)
+
+    db.commit()
